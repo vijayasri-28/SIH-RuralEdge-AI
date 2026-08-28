@@ -1,0 +1,213 @@
+{
+  "states": [
+    {
+      "state_code": 36,
+      "state_name": "Telangana",
+      "districts": [
+        {
+          "district_code": 505,
+          "district_name": "Mahabubnagar",
+          "sc_population_percentage": 17.8,
+          "primary_crops": ["Paddy", "Red Gram", "Chilly", "Cotton", "Groundnut"],
+          "apmc_mandi_count": 8,
+          "blocks": [
+            {
+              "block_code": 4310,
+              "block_name": "Kondurg",
+              "total_population": 48200,
+              "total_households": 10450,
+              "villages": [
+                {
+                  "village_code": 574890,
+                  "village_name": "Kondurg",
+                  "population": 6200,
+                  "has_local_mandi": true,
+                  "power_availability_hours_per_day": 20,
+                  "competitor_density": {
+                    "Agro-Processing": "Low",
+                    "Animal Husbandry & Dairy": "Medium",
+                    "Retail & Trading": "High",
+                    "Artisan & Handicrafts": "Low",
+                    "Rural Services & Tech": "Very Low"
+                  }
+                },
+                {
+                  "village_code": 574891,
+                  "village_name": "Chowdarpalle",
+                  "population": 3100,
+                  "has_local_mandi": false,
+                  "power_availability_hours_per_day": 18,
+                  "competitor_density": {
+                    "Agro-Processing": "Low",
+                    "Animal Husbandry & Dairy": "Low",
+                    "Retail & Trading": "Medium",
+                    "Artisan & Handicrafts": "Low",
+                    "Rural Services & Tech": "None"
+                  }
+                }
+              ]
+            },
+            {
+              "block_code": 4311,
+              "block_name": "Shadnagar",
+              "total_population": 72500,
+              "total_households": 15800,
+              "villages": [
+                {
+                  "village_code": 574910,
+                  "village_name": "Farooqnagar",
+                  "population": 9400,
+                  "has_local_mandi": true,
+                  "power_availability_hours_per_day": 22,
+                  "competitor_density": {
+                    "Agro-Processing": "Medium",
+                    "Animal Husbandry & Dairy": "Medium",
+                    "Retail & Trading": "High",
+                    "Artisan & Handicrafts": "Medium",
+                    "Rural Services & Tech": "Low"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "district_code": 506,
+          "district_name": "Warangal",
+          "sc_population_percentage": 19.2,
+          "primary_crops": ["Chilly", "Paddy", "Cotton", "Turmeric"],
+          "apmc_mandi_count": 11,
+          "blocks": [
+            {
+              "block_code": 4320,
+              "block_name": "Narsampet",
+              "total_population": 54000,
+              "total_households": 12100,
+              "villages": [
+                {
+                  "village_code": 575100,
+                  "village_name": "Chennaraopet",
+                  "population": 4800,
+                  "has_local_mandi": false,
+                  "power_availability_hours_per_day": 19,
+                  "competitor_density": {
+                    "Agro-Processing": "Low",
+                    "Animal Husbandry & Dairy": "Medium",
+                    "Retail & Trading": "Medium",
+                    "Artisan & Handicrafts": "Low",
+                    "Rural Services & Tech": "None"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "state_code": 9,
+      "state_name": "Uttar Pradesh",
+      "districts": [
+        {
+          "district_code": 178,
+          "district_name": "Varanasi",
+          "sc_population_percentage": 13.5,
+          "primary_crops": ["Paddy", "Wheat", "Mustard", "Vegetables"],
+          "apmc_mandi_count": 9,
+          "blocks": [
+            {
+              "block_code": 1420,
+              "block_name": "Cholapur",
+              "total_population": 65000,
+              "total_households": 13400,
+              "villages": [
+                {
+                  "village_code": 208400,
+                  "village_name": "Babatpur",
+                  "population": 5100,
+                  "has_local_mandi": true,
+                  "power_availability_hours_per_day": 18,
+                  "competitor_density": {
+                    "Agro-Processing": "Medium",
+                    "Animal Husbandry & Dairy": "High",
+                    "Retail & Trading": "High",
+                    "Artisan & Handicrafts": "Low",
+                    "Rural Services & Tech": "Low"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "district_code": 185,
+          "district_name": "Gorakhpur",
+          "sc_population_percentage": 21.4,
+          "primary_crops": ["Sugarcane", "Paddy", "Wheat", "Mustard"],
+          "apmc_mandi_count": 12,
+          "blocks": [
+            {
+              "block_code": 1450,
+              "block_name": "Bhathat",
+              "total_population": 58000,
+              "total_households": 11900,
+              "villages": [
+                {
+                  "village_code": 211200,
+                  "village_name": "Jangal Kauria",
+                  "population": 4200,
+                  "has_local_mandi": false,
+                  "power_availability_hours_per_day": 17,
+                  "competitor_density": {
+                    "Agro-Processing": "Low",
+                    "Animal Husbandry & Dairy": "High",
+                    "Retail & Trading": "Medium",
+                    "Artisan & Handicrafts": "Low",
+                    "Rural Services & Tech": "None"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "state_code": 27,
+      "state_name": "Maharashtra",
+      "districts": [
+        {
+          "district_code": 515,
+          "district_name": "Aurangabad (Chhatrapati Sambhajinagar)",
+          "sc_population_percentage": 14.8,
+          "primary_crops": ["Cotton", "Soybean", "Maize", "Sweet Orange"],
+          "apmc_mandi_count": 10,
+          "blocks": [
+            {
+              "block_code": 4510,
+              "block_name": "Paithan",
+              "total_population": 71000,
+              "total_households": 15200,
+              "villages": [
+                {
+                  "village_code": 554300,
+                  "village_name": "Bidle",
+                  "population": 3600,
+                  "has_local_mandi": false,
+                  "power_availability_hours_per_day": 19,
+                  "competitor_density": {
+                    "Agro-Processing": "Low",
+                    "Animal Husbandry & Dairy": "Medium",
+                    "Retail & Trading": "Medium",
+                    "Artisan & Handicrafts": "Medium",
+                    "Rural Services & Tech": "Low"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

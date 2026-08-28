@@ -1,0 +1,145 @@
+{
+  "archetypes": [
+    {
+      "archetype_id": "mini_flour_dal_mill",
+      "category": "Agro-Processing",
+      "name": "Mini Flour & Dal Mill",
+      "description": "Small-scale grain and pulse milling unit catering to 3-5 surrounding villages for custom milling and packaged retail flour/dal.",
+      "benchmark_project_cost": 120000,
+      "suggested_scale": "Micro (100-150 kg/day)",
+      "capex_breakdown": {
+        "machinery_equipment": 75000,
+        "shed_electrical_setup": 25000,
+        "packaging_weighing_tools": 10000,
+        "initial_working_capital": 10000
+      },
+      "typical_monthly_revenue": 38000,
+      "typical_monthly_opex": 22000,
+      "estimated_monthly_ebitda": 16000,
+      "raw_material_dependency": "Local wheat, gram, and pigeon pea from local farmers and village weekly haats",
+      "market_catchment_km": 8,
+      "power_requirement": "Single/Three Phase 5 HP Connection"
+    },
+    {
+      "archetype_id": "dairy_farming_unit",
+      "category": "Animal Husbandry & Dairy",
+      "name": "Rural Micro Dairy (2-Cow Unit)",
+      "description": "High-yield indigenous/cross-bred cow dairy unit producing 20-25 litres of milk daily supplied to village dairy cooperative societies and local tea stalls.",
+      "benchmark_project_cost": 135000,
+      "suggested_scale": "Micro (2 Milking Animals)",
+      "capex_breakdown": {
+        "animal_purchase": 95000,
+        "cattle_shed_water_feeder": 25000,
+        "milking_can_tools": 5000,
+        "initial_cattle_feed_fodder": 10000
+      },
+      "typical_monthly_revenue": 34000,
+      "typical_monthly_opex": 17000,
+      "estimated_monthly_ebitda": 17000,
+      "raw_material_dependency": "Green fodder from grazing lands, dry fodder (kadbi), and compound cattle feed",
+      "market_catchment_km": 5,
+      "power_requirement": "Minimal / Single Phase"
+    },
+    {
+      "archetype_id": "spice_chilly_grinding",
+      "category": "Agro-Processing",
+      "name": "Chilly & Spice Grinding Unit",
+      "description": "Custom spice pulverizer processing turmeric, coriander, and dry red chillies for local farm households, restaurants, and retail haats.",
+      "benchmark_project_cost": 95000,
+      "suggested_scale": "Micro (50-80 kg/day)",
+      "capex_breakdown": {
+        "pulverizer_hammer_mill": 58000,
+        "motor_electrical_installation": 18000,
+        "sealing_weighing_scales": 9000,
+        "initial_working_capital": 10000
+      },
+      "typical_monthly_revenue": 29000,
+      "typical_monthly_opex": 15000,
+      "estimated_monthly_ebitda": 14000,
+      "raw_material_dependency": "Whole whole dry chillies, turmeric bulbs, cumin from local APMC mandis",
+      "market_catchment_km": 10,
+      "power_requirement": "Three Phase 3-5 HP"
+    },
+    {
+      "archetype_id": "pottery_terracotta_crafts",
+      "category": "Artisan & Handicrafts",
+      "name": "Modern Terracotta & Pottery Unit",
+      "description": "Traditional clay pottery enhanced with motorized pottery wheel and energy-efficient kiln for earthen cookware, decorative pottery, and festival items.",
+      "benchmark_project_cost": 85000,
+      "suggested_scale": "Artisan Micro Enterprise",
+      "capex_breakdown": {
+        "motorized_pottery_wheel": 28000,
+        "mini_kiln_furnace_setup": 32000,
+        "clay_processing_pugmill": 15000,
+        "working_capital_glazes": 10000
+      },
+      "typical_monthly_revenue": 28000,
+      "typical_monthly_opex": 13000,
+      "estimated_monthly_ebitda": 15000,
+      "raw_material_dependency": "Local tank silt clay, red clay, firewood/biomass fuel, and organic pigments",
+      "market_catchment_km": 15,
+      "power_requirement": "Single Phase 1 HP"
+    },
+    {
+      "archetype_id": "solar_pump_rural_service",
+      "category": "Rural Services & Tech",
+      "name": "Solar Pump & Farm Machinery Repair Service",
+      "description": "Mobile service enterprise providing doorstep maintenance, solar pump invertor repairs, drip irrigation tuning, and farm electrical servicing.",
+      "benchmark_project_cost": 110000,
+      "suggested_scale": "Service Hub",
+      "capex_breakdown": {
+        "diagnostic_tools_multimeters": 35000,
+        "mobile_service_two_wheeler": 45000,
+        "spare_parts_inventory": 20000,
+        "training_safety_gear": 10000
+      },
+      "typical_monthly_revenue": 36000,
+      "typical_monthly_opex": 14000,
+      "estimated_monthly_ebitda": 22000,
+      "raw_material_dependency": "Solar pump controllers, fuses, MCBs, brass connectors, and wire harnesses",
+      "market_catchment_km": 20,
+      "power_requirement": "Battery Charging / Single Phase"
+    },
+    {
+      "archetype_id": "cold_pressed_oil_expeller",
+      "category": "Manufacturing & Agro-Processing",
+      "name": "Cold-Pressed Mustard/Groundnut Oil Expeller",
+      "description": "Traditional wooden/stone cold-pressed (Kachi Ghani) oil extraction plant producing pure unrefined mustard and groundnut cooking oil.",
+      "benchmark_project_cost": 450000,
+      "suggested_scale": "Commercial Small Unit (200 kg seed/day)",
+      "capex_breakdown": {
+        "cold_press_wood_ghani_machines": 260000,
+        "filtration_oil_tanks": 65000,
+        "shed_renovation_power_line": 55000,
+        "bottle_packaging_labels": 30000,
+        "seed_inventory_buffer": 40000
+      },
+      "typical_monthly_revenue": 125000,
+      "typical_monthly_opex": 82000,
+      "estimated_monthly_ebitda": 43000,
+      "raw_material_dependency": "Locally harvested mustard, groundnut, and sesame seeds from farmers",
+      "market_catchment_km": 25,
+      "power_requirement": "Three Phase 10 HP Commercial Connection"
+    },
+    {
+      "archetype_id": "rural_kirana_superstore",
+      "category": "Retail & Trading",
+      "name": "Modernized Rural Provision & Agrochemical Store",
+      "description": "Multi-utility retail store combining daily groceries, fast-moving consumer goods, cattle minerals, and organic agricultural inputs.",
+      "benchmark_project_cost": 250000,
+      "suggested_scale": "Village Centre Retail",
+      "capex_breakdown": {
+        "shop_racks_display_counters": 50000,
+        "pos_billing_inverter_system": 30000,
+        "refrigerator_deep_freezer": 35000,
+        "opening_merchandise_stock": 135000
+      },
+      "typical_monthly_revenue": 95000,
+      "typical_monthly_opex": 68000,
+      "estimated_monthly_ebitda": 27000,
+      "raw_material_dependency": "FMCG distributors at district headquarters, wholesale grain mandi traders",
+      "market_catchment_km": 6,
+      "power_requirement": "Single Phase 2 kW"
+    }
+  ]
+}

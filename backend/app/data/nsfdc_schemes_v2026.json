@@ -1,0 +1,111 @@
+{
+  "catalog_version": "2026.1",
+  "authority": "National Scheduled Castes Finance and Development Corporation (NSFDC)",
+  "official_portal": "https://nsfdc.nic.in",
+  "general_eligibility": {
+    "target_community": "Scheduled Caste (SC)",
+    "annual_family_income_ceiling_inr": 500000,
+    "income_ceiling_effective_date": "2026-01-07",
+    "statutory_source": {
+      "title": "NSFDC Official Portal & FAQ",
+      "source_url": "https://nsfdc.nic.in/en/faq",
+      "effective_date": "2026-01-07",
+      "last_verified_date": "2026-08-28"
+    }
+  },
+  "application_validation_assumptions": {
+    "min_project_cost_inr": 1000,
+    "disclaimer": "This minimum project cost is an application/UI input validation threshold and is NOT an NSFDC statutory rule."
+  },
+  "schemes": [
+    {
+      "scheme_id": "NSFDC-MFS-01",
+      "scheme_name": "Micro Finance Scheme",
+      "scope": "MVP_PRIMARY",
+      "description": "Concessional micro-credit for small income-generating activities for SC beneficiaries.",
+      "eligibility": {
+        "caste_category": "SC",
+        "max_annual_family_income_inr": 500000
+      },
+      "financial_limits": {
+        "max_project_cost_inr": 140000,
+        "max_loan_percentage": 90.0,
+        "absolute_max_loan_inr": 125000,
+        "beneficiary_interest_rate_pa": 6.5,
+        "repayment_tenure_years": 3,
+        "repayment_frequency": "QUARTERLY",
+        "total_periods": 12,
+        "moratorium_periods": 1,
+        "active_repayment_periods": 11,
+        "moratorium_months": 3,
+        "default_subsidy_inr": 0.0
+      },
+      "channelising_agencies": [
+        "State Channelising Agencies (SCAs)",
+        "Regional Rural Banks (RRBs)",
+        "Public Sector Nationalised Banks"
+      ],
+      "statutory_source": {
+        "title": "NSFDC Micro Credit Scheme / FAQ",
+        "source_url": "https://nsfdc.nic.in/en/micro-credit-scheme",
+        "faq_url": "https://nsfdc.nic.in/en/faq",
+        "last_verified_date": "2026-08-28"
+      }
+    },
+    {
+      "scheme_id": "NSFDC-TLS-01",
+      "scheme_name": "Term Loan Scheme",
+      "scope": "MVP_PRIMARY",
+      "description": "Term financing for viable commercial, industrial, agro-processing, or service micro-enterprises.",
+      "eligibility": {
+        "caste_category": "SC",
+        "max_annual_family_income_inr": 500000
+      },
+      "financial_limits": {
+        "max_project_cost_inr": 5000000,
+        "max_loan_percentage": 90.0,
+        "absolute_max_loan_inr": 4500000,
+        "beneficiary_interest_rate_pa": 8.0,
+        "repayment_tenure_years": 7,
+        "repayment_frequency": "MONTHLY",
+        "total_periods": 84,
+        "standard_moratorium_periods": 6,
+        "standard_active_repayment_periods": 78,
+        "standard_moratorium_months": 6,
+        "activity_specific_moratorium": {
+          "plantation": {
+            "moratorium_months": 12,
+            "moratorium_periods": 12,
+            "active_repayment_periods": 72
+          },
+          "construction": {
+            "moratorium_months": 12,
+            "moratorium_periods": 12,
+            "active_repayment_periods": 72
+          }
+        },
+        "default_subsidy_inr": 0.0
+      },
+      "channelising_agencies": [
+        "State Channelising Agencies (SCAs)",
+        "Public Sector Nationalised Banks",
+        "Regional Rural Banks (RRBs)"
+      ],
+      "statutory_source": {
+        "title": "NSFDC Term Loan Scheme / FAQ",
+        "source_url": "https://nsfdc.nic.in/en/term-loan-scheme",
+        "faq_url": "https://nsfdc.nic.in/en/faq",
+        "last_verified_date": "2026-08-28"
+      }
+    }
+  ],
+  "mvp_not_implemented_schemes": [
+    "Ajeevika Microfinance Yojana (AMY)",
+    "Udyamita Nidhi Yojana (UNY)",
+    "Education Loan Scheme (ELS)",
+    "Mahila Samriddhi Yojana (MSY)",
+    "Swachhta Udyami Yojana (SUY)",
+    "Laghu Vyavasay Yojana (LVY)",
+    "Green Business Scheme"
+  ]
+}
