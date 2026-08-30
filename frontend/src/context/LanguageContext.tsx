@@ -249,7 +249,7 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<SupportedLanguage>('hi');
+  const [language, setLanguage] = useState<SupportedLanguage>('en');
   const [isListening, setIsListening] = useState<boolean>(false);
 
   const t = (key: string): string => {

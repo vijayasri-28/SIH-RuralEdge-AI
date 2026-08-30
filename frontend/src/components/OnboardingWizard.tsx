@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import {
   fetchStates,
@@ -49,6 +49,15 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onEvaluation
   const [selectedBlock, setSelectedBlock] = useState<number>(4310); // Default Kondurg
   const [selectedVillage, setSelectedVillage] = useState<number | undefined>(574890); // Default Kondurg
 
+  // Generation counters to ignore stale async responses (race condition prevention)
+  const districtGenRef = useRef(0);
+  const blockGenRef = useRef(0);
+  const villageGenRef = useRef(0);
+
+  // Tracks whether the initial hierarchy has been loaded so the cascade effects
+  // do not fire on the very first render (initial data is fetched in loadInitialData).
+  const isInitialLoadDone = useRef(false);
+
   // Archetypes state
   const [archetypes, setArchetypes] = useState<BusinessArchetype[]>([]);
   const [selectedArchetypeId, setSelectedArchetypeId] = useState<string>('mini_flour_dal_mill');
@@ -68,54 +77,231 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onEvaluation
   // Live Quick Preview state
   const [quickPlan, setQuickPlan] = useState<DeterministicFinancialPlan | null>(null);
 
-  // Load initial data
-  useEffect(() => {
-    fetchStates().then((res) => setStates(res.states || [])).catch(console.error);
-    fetchArchetypes().then((res) => {
-      setArchetypes(res.archetypes || []);
-      if (res.archetypes?.length > 0) {
-        setSelectedArchetypeId(res.archetypes[0].archetype_id);
+  // Load initial data — fetches states, archetypes, AND the full default geo hierarchy
+  // (districts → blocks → villages for the hardcoded defaults) so the cascade effects
+  // don't fire on first render and wipe the default selections.
+useEffect(() => {
+  const loadInitialData = async () => {
+    try {
+      const [statesRes, archetypesRes] = await Promise.all([
+        fetchStates(),
+        fetchArchetypes()
+      ]);
+
+      const loadedStates = statesRes.states || [];
+      setStates(loadedStates);
+
+      // Keep default state if it exists, otherwise use first state
+      let effectiveState = selectedState;
+      if (
+        loadedStates.length > 0 &&
+        !loadedStates.some((s: any) => s.state_code === selectedState)
+      ) {
+        effectiveState = loadedStates[0].state_code;
+        setSelectedState(effectiveState);
       }
-    }).catch(console.error);
-  }, []);
 
-  // Update cascading geo
-  useEffect(() => {
-    if (selectedState) {
-      fetchDistricts(selectedState).then((res) => {
-        setDistricts(res.districts || []);
-        if (res.districts?.length > 0) {
-          const firstDist = res.districts[0].district_code;
-          setSelectedDistrict(firstDist);
+      const loadedArchetypes = archetypesRes.archetypes || [];
+      setArchetypes(loadedArchetypes);
+
+      if (
+        loadedArchetypes.length > 0 &&
+        !loadedArchetypes.some(
+          (a: BusinessArchetype) => a.archetype_id === selectedArchetypeId
+        )
+      ) {
+        setSelectedArchetypeId(loadedArchetypes[0].archetype_id);
+      }
+
+      // --- Load the full geo hierarchy for the initial defaults ---
+      // Fetch districts for the effective state
+      const distGen = ++districtGenRef.current;
+      let effectiveDistrict = selectedDistrict;
+      try {
+        const distRes = await fetchDistricts(effectiveState);
+        if (districtGenRef.current !== distGen) return;
+        const loadedDistricts = distRes.districts || [];
+        setDistricts(loadedDistricts);
+        // Verify the default district belongs to this state; fall back to first if not
+        if (loadedDistricts.length > 0) {
+          const defaultExists = loadedDistricts.some(
+            (d: any) => d.district_code === effectiveDistrict
+          );
+          if (!defaultExists) {
+            effectiveDistrict = loadedDistricts[0].district_code;
+            setSelectedDistrict(effectiveDistrict);
+          }
         }
-      }).catch(console.error);
-    }
-  }, [selectedState]);
+      } catch {
+        setDistricts([]);
+      }
 
-  useEffect(() => {
-    if (selectedState && selectedDistrict) {
-      fetchBlocks(selectedState, selectedDistrict).then((res) => {
-        setBlocks(res.blocks || []);
-        if (res.blocks?.length > 0) {
-          const firstBlock = res.blocks[0].block_code;
-          setSelectedBlock(firstBlock);
+      // Fetch blocks for the effective state + district
+      const blkGen = ++blockGenRef.current;
+      let effectiveBlock = selectedBlock;
+      try {
+        const blkRes = await fetchBlocks(effectiveState, effectiveDistrict);
+        if (blockGenRef.current !== blkGen) return;
+        const loadedBlocks = blkRes.blocks || [];
+        setBlocks(loadedBlocks);
+        if (loadedBlocks.length > 0) {
+          const defaultExists = loadedBlocks.some(
+            (b: any) => b.block_code === effectiveBlock
+          );
+          if (!defaultExists) {
+            effectiveBlock = loadedBlocks[0].block_code;
+            setSelectedBlock(effectiveBlock);
+          }
         }
-      }).catch(console.error);
-    }
-  }, [selectedState, selectedDistrict]);
+      } catch {
+        setBlocks([]);
+      }
 
-  useEffect(() => {
-    if (selectedState && selectedDistrict && selectedBlock) {
-      fetchVillages(selectedState, selectedDistrict, selectedBlock).then((res) => {
-        setVillages(res.villages || []);
-        if (res.villages?.length > 0) {
-          setSelectedVillage(res.villages[0].village_code);
+      // Fetch villages for the effective state + district + block
+      const vlgGen = ++villageGenRef.current;
+      try {
+        const vlgRes = await fetchVillages(effectiveState, effectiveDistrict, effectiveBlock);
+        if (villageGenRef.current !== vlgGen) return;
+        const loadedVillages = vlgRes.villages || [];
+        setVillages(loadedVillages);
+        if (loadedVillages.length > 0) {
+          const defaultExists = loadedVillages.some(
+            (v: any) => v.village_code === selectedVillage
+          );
+          if (!defaultExists) {
+            setSelectedVillage(loadedVillages[0].village_code);
+          }
         } else {
           setSelectedVillage(undefined);
         }
-      }).catch(console.error);
+      } catch {
+        setVillages([]);
+        setSelectedVillage(undefined);
+      }
+    } catch (error) {
+      console.error('Failed to load initial data:', error);
+    } finally {
+      // Signal that the initial load is done so the cascade effects can take over
+      isInitialLoadDone.current = true;
     }
-  }, [selectedState, selectedDistrict, selectedBlock]);
+  };
+
+  loadInitialData();
+}, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+// State → District
+// Skips the very first render (handled by loadInitialData above).
+// On subsequent state changes: clears downstream, fetches new districts, auto-selects first.
+useEffect(() => {
+  if (!isInitialLoadDone.current) return;
+  if (!selectedState) return;
+
+  const gen = ++districtGenRef.current;
+  // Immediately clear downstream to avoid stale data being visible
+  blockGenRef.current++;
+  villageGenRef.current++;
+  setDistricts([]);
+  setBlocks([]);
+  setVillages([]);
+  setSelectedDistrict(0);
+  setSelectedBlock(0);
+  setSelectedVillage(undefined);
+
+  const loadDistricts = async () => {
+    try {
+      const res = await fetchDistricts(selectedState);
+      if (districtGenRef.current !== gen) return; // stale response — discard
+
+      const loadedDistricts = res.districts || [];
+      setDistricts(loadedDistricts);
+
+      if (loadedDistricts.length > 0) {
+        setSelectedDistrict(loadedDistricts[0].district_code);
+      }
+    } catch (error) {
+      if (districtGenRef.current !== gen) return;
+      console.error('Failed to load districts:', error);
+      setDistricts([]);
+    }
+  };
+
+  loadDistricts();
+}, [selectedState]); // eslint-disable-line react-hooks/exhaustive-deps
+
+
+// District → Block
+// Skips the very first render (handled by loadInitialData above).
+// On subsequent district changes: clears downstream, fetches blocks, auto-selects first.
+useEffect(() => {
+  if (!isInitialLoadDone.current) return;
+  if (!selectedState || !selectedDistrict) return;
+
+  const gen = ++blockGenRef.current;
+  // Immediately clear downstream
+  villageGenRef.current++;
+  setBlocks([]);
+  setVillages([]);
+  setSelectedBlock(0);
+  setSelectedVillage(undefined);
+
+  const loadBlocks = async () => {
+    try {
+      const res = await fetchBlocks(selectedState, selectedDistrict);
+      if (blockGenRef.current !== gen) return; // stale response — discard
+
+      const loadedBlocks = res.blocks || [];
+      setBlocks(loadedBlocks);
+
+      if (loadedBlocks.length > 0) {
+        setSelectedBlock(loadedBlocks[0].block_code);
+      }
+    } catch (error) {
+      if (blockGenRef.current !== gen) return;
+      console.error('Failed to load blocks:', error);
+      setBlocks([]);
+    }
+  };
+
+  loadBlocks();
+}, [selectedState, selectedDistrict]); // eslint-disable-line react-hooks/exhaustive-deps
+
+
+// Block → Village
+// Skips the very first render (handled by loadInitialData above).
+// On subsequent block changes: clears villages, fetches new ones, auto-selects first.
+useEffect(() => {
+  if (!isInitialLoadDone.current) return;
+  if (!selectedState || !selectedDistrict || !selectedBlock) return;
+
+  const gen = ++villageGenRef.current;
+  setVillages([]);
+  setSelectedVillage(undefined);
+
+  const loadVillages = async () => {
+    try {
+      const res = await fetchVillages(selectedState, selectedDistrict, selectedBlock);
+      if (villageGenRef.current !== gen) return; // stale response — discard
+
+      const loadedVillages = res.villages || [];
+      setVillages(loadedVillages);
+
+      if (loadedVillages.length > 0) {
+        setSelectedVillage(loadedVillages[0].village_code);
+      }
+      // else: leave selectedVillage as undefined — block fallback is valid
+    } catch (error) {
+      if (villageGenRef.current !== gen) return;
+      console.error('Failed to load villages:', error);
+      setVillages([]);
+      setSelectedVillage(undefined);
+    }
+  };
+
+  loadVillages();
+}, [selectedState, selectedDistrict, selectedBlock]); // eslint-disable-line react-hooks/exhaustive-deps
+
+
+
 
   // Selected archetype object
   const selectedArchetype = archetypes.find((a) => a.archetype_id === selectedArchetypeId);
@@ -135,49 +321,104 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onEvaluation
   }, [effectiveProjectCost, availableCapital, annualIncome, socialCategory, activityType, channelMarginPct]);
 
   // Demo Scenario Presets for Hackathon Jury Presentation
-  const applyPreset = (preset: 'anita' | 'ramesh' | 'shravan') => {
-    if (preset === 'anita') {
-      // Anita Devi - SC Woman Entrepreneur in Telangana (Chilly/Spice Grinding)
-      setSelectedState(36); // Telangana
-      setSelectedDistrict(505); // Mahabubnagar
-      setSelectedBlock(4310); // Kondurg
-      setSelectedVillage(574890); // Kondurg
-      setSelectedArchetypeId('spice_chilly_grinding');
-      setAvailableCapital(15000);
-      setCustomCost('95000');
-      setSocialCategory('SC');
-      setAnnualIncome(220000);
-      setGender('Female');
-      setHasExperience(true);
-      setActivityType('standard');
-    } else if (preset === 'ramesh') {
-      // Ramesh - SC Potter in Varanasi (Terracotta Modernization)
-      setSelectedState(9); // Uttar Pradesh
-      setSelectedDistrict(178); // Varanasi
-      setSelectedBlock(1420); // Cholapur
-      setSelectedVillage(208400); // Babatpur
-      setSelectedArchetypeId('pottery_terracotta_crafts');
-      setAvailableCapital(10000);
-      setCustomCost('85000');
-      setSocialCategory('SC');
-      setAnnualIncome(180000);
-      setGender('Male');
-      setHasExperience(true);
-      setActivityType('standard');
-    } else if (preset === 'shravan') {
-      // Shravan - Commercial Oil Mill (Term Loan)
-      setSelectedState(27); // Maharashtra
-      setSelectedDistrict(515); // Aurangabad
-      setSelectedBlock(4510); // Paithan
-      setSelectedVillage(554300); // Bidle
-      setSelectedArchetypeId('cold_pressed_oil_expeller');
-      setAvailableCapital(60000);
-      setCustomCost('450000');
-      setSocialCategory('SC');
-      setAnnualIncome(340000);
-      setGender('Male');
-      setHasExperience(true);
-      setActivityType('standard');
+  // Loads the full geo hierarchy for the preset atomically to avoid the cascade
+  // effects overwriting preset selections with whatever the API returns first.
+  const applyPreset = async (preset: 'anita' | 'ramesh' | 'shravan') => {
+    type PresetConfig = {
+      stateCode: number;
+      districtCode: number;
+      blockCode: number;
+      villageCode: number;
+      archetypeId: string;
+      capital: number;
+      cost: string;
+      category: 'SC' | 'SafaiKaramchari' | 'ST' | 'OBC' | 'General';
+      income: number;
+      genderVal: 'Female' | 'Male' | 'Transgender';
+      experience: boolean;
+      activityType: string;
+    };
+
+    const presets: Record<string, PresetConfig> = {
+      anita: {
+        stateCode: 36, districtCode: 505, blockCode: 4310, villageCode: 574890,
+        archetypeId: 'spice_chilly_grinding', capital: 15000, cost: '95000',
+        category: 'SC', income: 220000, genderVal: 'Female', experience: true, activityType: 'standard'
+      },
+      ramesh: {
+        stateCode: 9, districtCode: 178, blockCode: 1420, villageCode: 208400,
+        archetypeId: 'pottery_terracotta_crafts', capital: 10000, cost: '85000',
+        category: 'SC', income: 180000, genderVal: 'Male', experience: true, activityType: 'standard'
+      },
+      shravan: {
+        stateCode: 27, districtCode: 515, blockCode: 4510, villageCode: 554300,
+        archetypeId: 'cold_pressed_oil_expeller', capital: 60000, cost: '450000',
+        category: 'SC', income: 340000, genderVal: 'Male', experience: true, activityType: 'standard'
+      }
+    };
+
+    const cfg = presets[preset];
+    if (!cfg) return;
+
+    // Apply non-geo fields immediately
+    setSelectedArchetypeId(cfg.archetypeId);
+    setAvailableCapital(cfg.capital);
+    setCustomCost(cfg.cost);
+    setSocialCategory(cfg.category);
+    setAnnualIncome(cfg.income);
+    setGender(cfg.genderVal);
+    setHasExperience(cfg.experience);
+    setActivityType(cfg.activityType);
+
+    // Bump all generation counters so any in-flight cascade effects are discarded
+    const distGen = ++districtGenRef.current;
+    const blkGen = ++blockGenRef.current;
+    const vlgGen = ++villageGenRef.current;
+
+    // Clear all dropdowns immediately to avoid momentary stale display
+    setDistricts([]);
+    setBlocks([]);
+    setVillages([]);
+    setSelectedDistrict(0);
+    setSelectedBlock(0);
+    setSelectedVillage(undefined);
+
+    // Set the state — the State→District effect will fire but its fetch will be
+    // discarded because we already bumped districtGenRef above.
+    setSelectedState(cfg.stateCode);
+
+    // Load the full hierarchy for the preset sequentially
+    try {
+      const distRes = await fetchDistricts(cfg.stateCode);
+      if (districtGenRef.current !== distGen) return;
+      const loadedDistricts = distRes.districts || [];
+      setDistricts(loadedDistricts);
+      const districtCode = loadedDistricts.some((d: any) => d.district_code === cfg.districtCode)
+        ? cfg.districtCode
+        : loadedDistricts[0]?.district_code ?? 0;
+      setSelectedDistrict(districtCode);
+      if (!districtCode) return;
+
+      const blkRes = await fetchBlocks(cfg.stateCode, districtCode);
+      if (blockGenRef.current !== blkGen) return;
+      const loadedBlocks = blkRes.blocks || [];
+      setBlocks(loadedBlocks);
+      const blockCode = loadedBlocks.some((b: any) => b.block_code === cfg.blockCode)
+        ? cfg.blockCode
+        : loadedBlocks[0]?.block_code ?? 0;
+      setSelectedBlock(blockCode);
+      if (!blockCode) return;
+
+      const vlgRes = await fetchVillages(cfg.stateCode, districtCode, blockCode);
+      if (villageGenRef.current !== vlgGen) return;
+      const loadedVillages = vlgRes.villages || [];
+      setVillages(loadedVillages);
+      const villageCode = loadedVillages.some((v: any) => v.village_code === cfg.villageCode)
+        ? cfg.villageCode
+        : loadedVillages[0]?.village_code;
+      setSelectedVillage(villageCode);
+    } catch (error) {
+      console.error('Failed to load preset geo data:', error);
     }
   };
 

@@ -7,7 +7,7 @@ import { VoiceAdvisorModal } from './components/VoiceAdvisorModal';
 import { SchemesCatalogModal } from './components/SchemesCatalogModal';
 import { evaluateFeasibility } from './services/api';
 import type { FeasibilityEvaluationResponse, MinimalOnboardingInput, EligibilityProfile } from './types';
-import { AlertCircle, Sprout, Zap, Users, BookOpen, Microchip, ShieldCheck, ArrowRight } from 'lucide-react';
+import { AlertCircle, Sprout, Zap, Users, BookOpen, Microchip, ShieldCheck} from 'lucide-react';
 import './App.css';
 
 const AppContent: React.FC = () => {
