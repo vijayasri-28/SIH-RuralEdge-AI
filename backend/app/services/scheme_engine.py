@@ -29,11 +29,14 @@ class SchemeEngine:
 
         if not is_sc:
             return {
-                "eligible": False,
-                "scheme": None,
-                "reason_code": "NOT_SC_CATEGORY",
-                "message": "NSFDC schemes are strictly for Scheduled Caste (SC) beneficiaries. You may explore general schemes such as PMEGP, PM-MUDRA, or PMFME."
+                 "eligible": False,
+                 "scheme": None,
+                 "reason_code": "NOT_SC_CATEGORY",
+                 "message": "NSFDC schemes are strictly for Scheduled Caste (SC) beneficiaries. You may explore general schemes such as PMEGP, PM-MUDRA, or PMFME."
             }
+
+            
+    
 
         if not income_eligible:
             return {
