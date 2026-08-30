@@ -150,3 +150,46 @@ export async function downloadDprPdf(reportId: string, reportData?: FeasibilityE
   }
 }
 
+
+export async function registerUser(payload: {
+  email: string;
+  password: string;
+  full_name?: string;
+}) {
+  const res = await fetch(`${API_BASE_URL}/auth/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data.detail || 'Registration failed');
+  }
+
+  return data;
+}
+
+export async function loginUser(payload: {
+  email: string;
+  password: string;
+}) {
+  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data.detail || 'Login failed');
+  }
+
+  return data;
+}

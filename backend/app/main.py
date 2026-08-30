@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from fastapi import FastAPI, HTTPException, Query, Response, Body
+from fastapi import FastAPI, HTTPException, Query, Response, Body,Depends
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List, Dict, Any
 
@@ -19,12 +19,28 @@ from .services.geo_service import geo_service
 from .services.confidence_service import confidence_service
 from .services.gemini_advisory import gemini_advisory_service
 from .services.pdf_service import pdf_generator
+from sqlalchemy.orm import Session
+
+from .database import Base, engine, get_db
+from .models.auth_schemas import (
+    UserRegister,
+    UserLogin,
+    TokenResponse,
+    UserResponse,
+)
+from .services.auth_service import (
+    register_user,
+    authenticate_user,
+    create_access_token,
+)
 
 app = FastAPI(
     title="RuralEdge AI - NSFDC Hyper-Local Rural Micro-Enterprise Advisory Platform",
     description="Smart India Hackathon (SIH) Solution: AI-Driven Hyper-Local Business Advisory and Financial Structuring Assistant for Rural Micro-Entrepreneurs",
     version="1.0.0"
 )
+
+Base.metadata.create_all(bind=engine)
 
 # Enable CORS for frontend integration
 app.add_middleware(
@@ -46,6 +62,52 @@ def health_check():
         "timestamp": datetime.now().isoformat(),
         "nsfdc_catalog_version": scheme_engine.get_all_schemes_catalog().get("catalog_version", "2026.1"),
         "income_ceiling_inr": float(scheme_engine.income_ceiling)
+    }
+
+@app.post("/api/v1/auth/register", response_model=UserResponse)
+def register(
+    req: UserRegister,
+    db: Session = Depends(get_db)
+):
+    user = register_user(
+        db=db,
+        email=req.email,
+        password=req.password,
+        full_name=req.full_name,
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=400,
+            detail="A user with this email already exists."
+        )
+
+    return user
+
+@app.post("/api/v1/auth/login", response_model=TokenResponse)
+def login(req: UserLogin, db: Session = Depends(get_db)):
+    user = authenticate_user(
+        db=db,
+        email=req.email,
+        password=req.password
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password."
+        )
+
+    
+    access_token = create_access_token(
+    user_id=user.id,
+    email=user.email
+)
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user
     }
 
 @app.get("/api/v1/geo/states")
