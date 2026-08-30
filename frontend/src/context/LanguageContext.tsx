@@ -249,7 +249,7 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<SupportedLanguage>('hi');
+  const [language, setLanguage] = useState<SupportedLanguage>('en');
   const [isListening, setIsListening] = useState<boolean>(false);
 
   const t = (key: string): string => {
@@ -300,26 +300,52 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const speakText = (text: string) => {
-    if (!('speechSynthesis' in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      const langCodes: Record<SupportedLanguage, string> = {
-        hi: 'hi-IN',
-        te: 'te-IN',
-        ta: 'ta-IN',
-        mr: 'mr-IN',
-        bn: 'bn-IN',
-        kn: 'kn-IN',
-        en: 'en-IN'
-      };
-      utterance.lang = langCodes[language] || 'en-US';
-      utterance.rate = 0.95;
-      window.speechSynthesis.speak(utterance);
-    } catch (e) {
-      console.error('TTS error:', e);
+  if (!("speechSynthesis" in window)) return;
+
+  try {
+    window.speechSynthesis.cancel();
+
+    const langCodes: Record<SupportedLanguage, string> = {
+      hi: "hi-IN",
+      te: "te-IN",
+      ta: "ta-IN",
+      mr: "mr-IN",
+      bn: "bn-IN",
+      kn: "kn-IN",
+      en: "en-IN",
+    };
+
+    const selectedLang = langCodes[language] || "en-IN";
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = selectedLang;
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+
+    // Try to find a voice matching the selected language
+    const voices = window.speechSynthesis.getVoices();
+
+    const matchingVoice =
+      voices.find(
+        (voice) =>
+          voice.lang.toLowerCase() === selectedLang.toLowerCase()
+      ) ||
+      voices.find(
+        (voice) =>
+          voice.lang
+            .toLowerCase()
+            .startsWith(selectedLang.split("-")[0].toLowerCase())
+      );
+
+    if (matchingVoice) {
+      utterance.voice = matchingVoice;
     }
-  };
+
+    window.speechSynthesis.speak(utterance);
+  } catch (e) {
+    console.error("TTS error:", e);
+  }
+};
 
   return (
     <LanguageContext.Provider

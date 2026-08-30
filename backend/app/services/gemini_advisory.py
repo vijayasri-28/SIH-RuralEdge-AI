@@ -138,7 +138,9 @@ class GeminiAdvisoryService:
         """
         Multilingual Indic conversational advisor.
         Supports Hindi, Telugu, Tamil, Marathi, Bengali, Kannada, and English.
+
         """
+        feasibility_context = feasibility_context or {}
         lang_names = {
             "hi": "Hindi (हिंदी)",
             "te": "Telugu (తెలుగు)",
@@ -176,6 +178,9 @@ class GeminiAdvisoryService:
         - NEVER calculate or invent numbers; use ONLY the pre-calculated figures provided in the context.
         - For NSFDC schemes, emphasize that final sanction is subject to State Channelising Agency (SCA) or bank verification.
         - Keep answers structured, practical, and accessible for rural entrepreneurs.
+        - Always answer the user's actual question first. Do not give a generic loan or NSDFC response unless the user asks about loans or NSDFC schemes.
+        - Use the user's location and feasibility context when relevant.
+        - If the user asks for business ideas, give relevant business ideas with brief reasons instead of repeating loan information.
         """
 
         if self.client:
