@@ -79,8 +79,20 @@ def get_villages(
     return {"villages": villages}
 
 @app.get("/api/v1/business/archetypes")
-def get_archetypes():
-    return {"archetypes": geo_service.get_archetypes()}
+def get_archetypes(
+    state_code: Optional[int] = Query(None, description="LGD State Code"),
+    district_code: Optional[int] = Query(None, description="LGD District Code"),
+    block_code: Optional[int] = Query(None, description="LGD Block Code"),
+    village_code: Optional[int] = Query(None, description="LGD Village Code")
+):
+    return {
+        "archetypes": geo_service.get_archetypes(
+            state_code=state_code,
+            district_code=district_code,
+            block_code=block_code,
+            village_code=village_code
+        )
+    }
 
 @app.get("/api/v1/schemes/catalog")
 def get_schemes_catalog():

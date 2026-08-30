@@ -5,14 +5,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Check for Gemini API key
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# Check for Gemini API key (supports both GEMINI_API_KEY and GOOGLE_API_KEY)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 
 class GeminiAdvisoryService:
     def __init__(self):
         self.api_key = GEMINI_API_KEY
         self.client = None
-        if self.api_key:
+        self._init_client()
+
+    def _init_client(self):
+        self.api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if self.api_key and not self.client:
             try:
                 from google import genai
                 self.client = genai.Client(api_key=self.api_key)
@@ -67,7 +71,7 @@ class GeminiAdvisoryService:
         ]
 
         local_niche = f"Establish a specialized {arch_name} hub offering both custom job-work milling/services for local farmers and hygienic small-pack retail distribution in {location_desc}."
-        
+
         mitigations = [
             "Maintain 30-45 days buffer inventory of essential raw materials purchased during peak harvest mandi arrivals.",
             "Install a voltage stabilizer / inverter backup to protect motors from rural power fluctuations.",
@@ -81,6 +85,7 @@ class GeminiAdvisoryService:
             "4. Track credit appraisal and SCA sanction order for prompt subsidy/concessional interest channelization."
         ]
 
+        self._init_client()
         # If Gemini client is active, attempt AI enrichment
         if self.client:
             try:
@@ -138,7 +143,6 @@ class GeminiAdvisoryService:
         """
         Multilingual Indic conversational advisor.
         Supports Hindi, Telugu, Tamil, Marathi, Bengali, Kannada, and English.
-
         """
         feasibility_context = feasibility_context or {}
         lang_names = {
@@ -150,70 +154,299 @@ class GeminiAdvisoryService:
             "kn": "Kannada (ಕನ್ನಡ)",
             "en": "English"
         }
-        target_lang = lang_names.get(language, "Hindi (हिंदी)")
+        target_lang = lang_names.get(language, "English")
 
-        # Prepare context summary
-        context_str = "No active feasibility report in context."
-        if feasibility_context:
-            fin = feasibility_context.get("financial_plan", {})
-            arch = feasibility_context.get("archetype_details", {})
-            geo = feasibility_context.get("geo_context", {})
-            context_str = f"""
-            Active Business: {arch.get('name', 'Rural Micro-Enterprise')}
-            Location: {geo.get('village_name', geo.get('block_name', ''))}, {geo.get('district_name', '')}
-            Project Cost: Rs {fin.get('project_cost', 0):,.2f}
-            Approved Loan: Rs {fin.get('approved_loan', 0):,.2f} under {fin.get('selected_scheme_name', 'NSFDC Scheme')}
-            Interest Rate: {fin.get('interest_rate_pa', 6.5)}% p.a. ({fin.get('repayment_frequency', 'QUARTERLY')})
-            Installment: Rs {fin.get('installment_amount', 0):,.2f}
-            Financing Gap: Rs {fin.get('financing_gap', 0):,.2f}
-            """
+        # Extract context fields safely whether from evaluation report or live wizard state
+        onb = feasibility_context.get("onboarding") or {}
+        loc = onb.get("location") or feasibility_context.get("location") or {}
+        geo = feasibility_context.get("geo_context") or {}
+        arch = feasibility_context.get("archetype_details") or feasibility_context.get("selected_archetype") or {}
+        fin = feasibility_context.get("financial_plan") or {}
+        elig = feasibility_context.get("eligibility") or {}
 
-        system_instruction = f"""
-        You are 'Gramin Udyog Mitra' (Rural Enterprise Advisor), an AI advisor for rural micro-entrepreneurs in India.
-        Respond in clear, encouraging, respectful {target_lang}.
-        Context:
-        {context_str}
-        
-        Rules:
-        - NEVER calculate or invent numbers; use ONLY the pre-calculated figures provided in the context.
-        - For NSFDC schemes, emphasize that final sanction is subject to State Channelising Agency (SCA) or bank verification.
-        - Keep answers structured, practical, and accessible for rural entrepreneurs.
-        - Always answer the user's actual question first. Do not give a generic loan or NSDFC response unless the user asks about loans or NSDFC schemes.
-        - Use the user's location and feasibility context when relevant.
-        - If the user asks for business ideas, give relevant business ideas with brief reasons instead of repeating loan information.
+        # Resolve location names
+        village_name = loc.get("village_name") or geo.get("village_name") or ""
+        block_name = loc.get("block_name") or geo.get("block_name") or ""
+        district_name = loc.get("district_name") or geo.get("district_name") or ""
+        state_name = loc.get("state_name") or geo.get("state_name") or ""
+
+        loc_parts = [p for p in [village_name, block_name, district_name, state_name] if p]
+        location_str = ", ".join(loc_parts) if loc_parts else "your rural catchment"
+
+        arch_name = arch.get("name") or onb.get("business_archetype_id", "Rural Micro-Enterprise")
+        category = arch.get("category", "Micro-Enterprise")
+
+        # Financial numbers
+        project_cost = fin.get("project_cost") or arch.get("benchmark_project_cost") or onb.get("custom_project_cost") or 100000.0
+        approved_loan = fin.get("approved_loan") or (project_cost * 0.9 if project_cost else 90000.0)
+        scheme_name = fin.get("selected_scheme_name") or ("NSFDC Micro Credit Scheme" if project_cost <= 150000 else "NSFDC Term Loan Scheme")
+        interest_rate = fin.get("interest_rate_pa", 6.5)
+        installment = fin.get("installment_amount", 0.0)
+        moratorium_months = fin.get("moratorium_months", 3)
+        social_category = elig.get("social_category", "SC")
+        annual_income = elig.get("annual_family_income_inr", 240000)
+
+        context_summary = f"""
+        Location: {location_str}
+        Selected Business: {arch_name} ({category})
+        Project Cost: Rs {project_cost:,.2f}
+        Approved NSFDC Loan: Rs {approved_loan:,.2f}
+        Eligible Scheme: {scheme_name}
+        Interest Rate: {interest_rate}% p.a.
+        Installment: Rs {installment:,.2f}
+        Moratorium: {moratorium_months} months
+        Social Category: {social_category}
+        Annual Family Income: Rs {annual_income:,.2f} (Ceiling <= Rs 5,00,000 p.a.)
         """
 
+        self._init_client()
         if self.client:
             try:
-                chat_prompt = f"{system_instruction}\n\nUser Question: {user_message}"
+                system_prompt = f"""
+                You are 'Gramin Udyog Mitra' (Rural Enterprise Advisor), an expert AI advisor for rural Indian entrepreneurs under the National Scheduled Castes Finance and Development Corporation (NSFDC).
+
+                IMPORTANT INSTRUCTIONS:
+                1. You MUST respond entirely in {target_lang}.
+                2. Explicitly incorporate the user's specific context:
+                   - Location: {location_str}
+                   - Business Activity: {arch_name}
+                   - Scheme: {scheme_name} (Approved Loan: Rs {approved_loan:,.0f} @ {interest_rate}%)
+                3. Address the user's question directly, courteously, and practically.
+                4. Never invent conflicting financial figures; use the pre-calculated numbers provided.
+                5. Remind the user that final loan sanction occurs through the District State Channelising Agency (SCA) or local bank.
+
+                Context:
+                {context_summary}
+
+                User Message: {user_message}
+                """
                 response = self.client.models.generate_content(
                     model="gemini-2.5-flash",
-                    contents=chat_prompt
+                    contents=system_prompt
                 )
                 if response.text:
                     return {
-                        "reply_text": response.text,
+                        "reply_text": response.text.strip(),
                         "language": language,
-                        "suggested_quick_questions": [
-                            "How do I apply at the SCA office?",
-                            "What documents are needed for SC certificate verification?",
-                            "How does the moratorium period work?"
-                        ],
+                        "suggested_quick_questions": self._get_suggested_questions(language),
                         "evidence_citations": [
-                            "NSFDC Official Lending Policy (https://nsfdc.nic.in/en/faq)",
-                            "State Channelising Agency (SCA) Operational Guidelines"
+                            "NSFDC Official Lending Guidelines 2026 (https://nsfdc.nic.in/en/faq)",
+                            f"State Channelising Agency (SCA) Guidelines for {state_name or 'State'}"
                         ]
                     }
             except Exception as e:
-                print(f"[GeminiAdvisoryService] Gemini chat fallback: {e}")
+                print(f"[GeminiAdvisoryService] Gemini live chat fallback: {e}")
 
-        # Grounded multi-lingual fallback templates if Gemini is offline
-        fallback_replies = {
-            "hi": f"नमस्ते! आपके प्रोजेक्ट के लिए NSFDC की योजना के तहत {feasibility_context.get('financial_plan', {}).get('selected_scheme_name', 'योजना')} उपयुक्त है। आपकी अनुमोदित ऋण राशि रु {feasibility_context.get('financial_plan', {}).get('approved_loan', 0):,.0f} है जिसकी ब्याज दर {feasibility_context.get('financial_plan', {}).get('interest_rate_pa', 6.5)}% है। आवेदन करने के लिए अपने जिले की राज्य चैनलाइजिंग एजेंसी (SCA) या ग्रामीण बैंक में संपर्क करें।",
-            "te": f"నమస్కారం! మీ ప్రాజెక్ట్ కోసం NSFDC {feasibility_context.get('financial_plan', {}).get('selected_scheme_name', 'స్కీమ్')} కింద రూ. {feasibility_context.get('financial_plan', {}).get('approved_loan', 0):,.0f} రుణం 6.5% వడ్డీతో అందుబాటులో ఉంది. దరఖాస్తు కోసం మీ జిల్లా స్టేట్ ఛానలైజింగ్ ఏజెన్సీ (SCA) లేదా ప్రాంతీయ గ్రామీణ బ్యాంకును సంప్రదించండి.",
-            "ta": f"வணக்கம்! உங்கள் திட்டத்திற்கு NSFDC திட்டத்தின் கீழ் ரூ. {feasibility_context.get('financial_plan', {}).get('approved_loan', 0):,.0f} கடன் 6.5% வட்டியில் கிடைக்கும். விண்ணப்பிக்க மாவட்ட SCA அலுவலகம் அல்லது கிராம வங்கியை தொடர்பு கொள்ளவும்.",
-            "mr": f"नमस्कार! आपल्या प्रकल्पासाठी NSFDC योजनेअंतर्गत रु. {feasibility_context.get('financial_plan', {}).get('approved_loan', 0):,.0f} चे कर्ज उपलब्ध आहे. अर्जासाठी जिल्हा चॅनेलाइजिंग एजन्सी (SCA) शी संपर्क साधा.",
-            "bn": f"নমস্কার! আপনার প্রকল্পের জন্য NSFDC প্রকল্পের অধীনে {feasibility_context.get('financial_plan', {}).get('approved_loan', 0):,.0f} টাকার ঋণ উপলব্ধ। বিস্তারিত তথ্যের জন্য জেলা SCA অফিসে যোগাযোগ করুন।",
+        # Intelligent Multilingual Grounded Fallback Engine
+        reply_text = self._build_dynamic_grounded_fallback(
+            language=language,
+            user_message=user_message,
+            arch_name=arch_name,
+            category=category,
+            location_str=location_str,
+            district_name=district_name,
+            state_name=state_name,
+            scheme_name=scheme_name,
+            approved_loan=approved_loan,
+            project_cost=project_cost,
+            interest_rate=interest_rate,
+            installment=installment,
+            moratorium_months=moratorium_months,
+            social_category=social_category
+        )
+
+        return {
+            "reply_text": reply_text,
+            "language": language,
+            "suggested_quick_questions": self._get_suggested_questions(language),
+            "evidence_citations": [
+                "NSFDC Official Lending Guidelines (https://nsfdc.nic.in/en/faq)",
+                f"State Channelising Agency (SCA) - {state_name or 'District'} Livelihood Cell"
+            ]
+        }
+
+    def _get_suggested_questions(self, language: str) -> List[str]:
+        questions_by_lang = {
+            "te": [
+                "దరఖాస్తుకు ఏయే సర్టిఫికెట్లు అవసరం?",
+                "జిల్లా SCA కార్యాలయం ఎక్కడ ఉంది?",
+                "మొరటోరియం వడ్డీ ఎలా లెక్కిస్తారు?"
+            ],
+            "hi": [
+                "आवेदन के लिए कौन से दस्तावेज आवश्यक हैं?",
+                "जिला SCA कार्यालय में कैसे संपर्क करें?",
+                "मोराटोरियम अवधि का क्या लाभ है?"
+            ],
+            "ta": [
+                "விண்ணப்பிக்க தேவையான ஆவணங்கள் யாவை?",
+                "மாவட்ட SCA அலுவலகத்தை எவ்வாறு தொடர்புகொள்வது?",
+                "மொரட்டோரியம் காலம் எவ்வாறு செயல்படுகிறது?"
+            ],
+            "mr": [
+                "अर्जासाठी कोणती कागदपत्रे लागतात?",
+                "जिल्हा SCA कार्यालयाशी कसा संपर्क साधावा?",
+                "सवलत कालावधी (Moratorium) कसा मिळतो?"
+            ],
+            "bn": [
+                "আবেদনের জন্য কী কী নথিপত্র প্রয়োজন?",
+                "জেলা SCA অফিসে কীভাবে যোগাযোগ করবেন?",
+                "মোরাটোরিয়াম সুবিধা কীভাবে পাওয়া যায়?"
+            ],
+            "kn": [
+                "ಅರ್ಜಿಗೆ ಅಗತ್ಯವಿರುವ ದಾಖಲೆಗಳು ಯಾವುವು?",
+                "ಜಿಲ್ಲಾ SCA ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸುವುದು ಹೇಗೆ?",
+                "ಮೊರಟೋರಿಯಂ ಅವಧಿ ಹೇಗೆ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ?"
+            ],
+            "en": [
+                "What documents are needed for SC certificate verification?",
+                "How do I contact my local State Channelising Agency (SCA)?",
+                "How is the moratorium interest calculated?"
+            ]
+        }
+        return questions_by_lang.get(language, questions_by_lang["en"])
+
+    def _build_dynamic_grounded_fallback(
+        self,
+        language: str,
+        user_message: str,
+        arch_name: str,
+        category: str,
+        location_str: str,
+        district_name: str,
+        state_name: str,
+        scheme_name: str,
+        approved_loan: float,
+        project_cost: float,
+        interest_rate: float,
+        installment: float,
+        moratorium_months: int,
+        social_category: str
+    ) -> str:
+        """
+        Generates context-aware, hyper-local Indic responses matching user query intent.
+        """
+        msg_lower = user_message.lower()
+        loan_formatted = f"{approved_loan:,.0f}"
+        cost_formatted = f"{project_cost:,.0f}"
+        inst_formatted = f"{installment:,.0f}" if installment > 0 else "నిర్ణయించబడుతుంది"
+
+        is_docs_query = any(k in msg_lower for k in ["doc", "certificate", "caste", "income", "paper", "పత్రాలు", "సర్టిఫికేట్", "దస్తావేజు", "दस्तावेज", "प्रमाणपत्र", "कागदपत्रे", "ஆவணங்கள்", "ದಾಖಲೆ"])
+        is_sca_query = any(k in msg_lower for k in ["sca", "apply", "office", "bank", "branch", "contact", "దరఖాస్తు", "ఆఫీస్", "బ్యాంక్", "आवेदन", "कार्यालय", "தொடர்பு", "ಸಂಪರ್ಕ"])
+        is_finance_query = any(k in msg_lower for k in ["interest", "moratorium", "rate", "emi", "installment", "loan", "వడ్డీ", "వాయిదా", "రుణం", "ब्याज", "किस्त", "कर्ज", "வட்டி", "ಬಡ್ಡಿ"])
+        is_business_query = any(k in msg_lower for k in ["pottery", "chilly", "spice", "mill", "oil", "dairy", "solar", "store", "market", "demand", "వ్యాపార", "మార్కెట్", "उद्योग", "व्यवसाय", "தொழில்"])
+
+        if language == "te":
+            if is_docs_query:
+                return (
+                    f"నమస్కారం! {location_str} పరిధిలో {arch_name} ప్రాజెక్ట్ కోసం NSFDC రుణ దరఖాస్తుకు ఈ క్రింది ధ్రువపత్రాలు అవసరం:\n"
+                    f"1. కుల ధ్రువీకరణ పత్రం ({social_category} సర్టిఫికేట్ - తహశీల్దార్ జారీ చేసినది)\n"
+                    f"2. వార్షిక కుటుంబ ఆదాయ ధ్రువీకరణ పత్రం (వార్షిక ఆదాయం రూ. 5,00,000 లోపు ఉండాలి)\n"
+                    f"3. ఆధార్ కార్డు మరియు నివాస ధ్రువీకరణ పత్రం\n"
+                    f"4. బ్యాంక్ పాస్‌బుక్ మరియు {arch_name} యంత్రాల కొటేషన్ లేదా DPR ప్రాజెక్ట్ రిపోర్ట్."
+                )
+            elif is_sca_query:
+                return (
+                    f"నమస్కారం! {location_str} ప్రాంతంలో మీ {arch_name} యూనిట్ కొరకు NSFDC రుణం పొందడానికి, "
+                    f"మీ జిల్లా కేంద్రంలోని స్టేట్ ఛానలైజింగ్ ఏజెన్సీ (SCA / SC కార్పొరేషన్) లేదా సమీప ప్రాంతీయ గ్రామీణ బ్యాంక్ (RRB) ని సంప్రదించండి. "
+                    f"ఈ పోర్టల్ నుండి డౌన్‌లోడ్ చేసిన బ్యాంక్ ప్రాజెక్ట్ రిపోర్ట్ (DPR PDF) సమర్పించి {scheme_name} కింద దరఖాస్తు చేసుకోవచ్చు."
+                )
+            elif is_business_query:
+                return (
+                    f"{location_str} ప్రాంతంలో {arch_name} ({category}) ఏర్పాటు చేయడం చాలా ప్రయోజనకరమైనది. "
+                    f"మొత్తం ప్రాజెక్ట్ వ్యయం దాదాపు రూ. {cost_formatted} కాగా, NSFDC {scheme_name} కింద గరిష్టంగా 90% (రూ. {loan_formatted}) రాయితీ వడ్డీతో ({interest_rate}% p.a.) రుణం లభిస్తుంది. "
+                    f"స్థానిక మార్కెట్ మరియు గ్రామాల అవసరాలను తీర్చడం ద్వారా స్థిరమైన లాభాలు పొందవచ్చు."
+                )
+            else:
+                return (
+                    f"నమస్కారం! {location_str} లో మీ {arch_name} ప్రాజెక్ట్ కోసం NSFDC {scheme_name} అత్యంత అనుకూలమైనది. "
+                    f"దీని కింద రూ. {loan_formatted} వరకు రాయితీ రుణం {interest_rate}% వార్షిక వడ్డీ రేటుతో లభిస్తుంది. "
+                    f"{moratorium_months} నెలల మొరటోరియం కాలం తర్వాత క్రమబద్ధ వాయిదాలు చెల్లించవచ్చు. "
+                    f"దరఖాస్తు ప్రక్రియ కోసం మీ జిల్లా SCA కార్యాలయాన్ని సంప్రదించండి."
+                )
+
+        elif language == "hi":
+            if is_docs_query:
+                return (
+                    f"नमस्ते! {location_str} में {arch_name} उद्यम के लिए NSFDC ऋण आवेदन हेतु मुख्य दस्तावेज:\n"
+                    f"1. जाति प्रमाण पत्र ({social_category} सत्यापन - तहसीलदार द्वारा जारी)\n"
+                    f"2. आय प्रमाण पत्र (पारिवारिक आय ₹5,00,000 प्रति वर्ष से कम)\n"
+                    f"3. आधार कार्ड, निवास प्रमाण पत्र व बैंक पासबुक\n"
+                    f"4. {arch_name} मशीनरी कोटेशन व यह विस्तृत प्रोजेक्ट रिपोर्ट (DPR)."
+                )
+            elif is_sca_query:
+                return (
+                    f"नमस्ते! {location_str} में {arch_name} के लिए NSFDC ऋण प्राप्त करने हेतु अपने जिला मुख्यालय स्थित राज्य चैनलाइजिंग एजेंसी (SCA / SC निगम) या नजदीकी ग्रामीण बैंक से संपर्क करें। "
+                    f"वहां इस DPR रिपोर्ट के साथ {scheme_name} के अंतर्गत औपचारिक आवेदन जमा करें।"
+                )
+            elif is_business_query:
+                return (
+                    f"{location_str} में {arch_name} ({category}) की स्थापना अत्यंत लाभकारी अवसर है। "
+                    f"परियोजना लागत लगभग ₹{cost_formatted} है, जिसमें NSFDC {scheme_name} के तहत ₹{loan_formatted} तक का रियायती ऋण {interest_rate}% ब्याज दर पर उपलब्ध है।"
+                )
+            else:
+                return (
+                    f"नमस्ते! {location_str} में आपके {arch_name} प्रोजेक्ट के लिए NSFDC {scheme_name} अनुमोदित है। "
+                    f"आपकी स्वीकृत ऋण सीमा ₹{loan_formatted} है जिसकी ब्याज दर {interest_rate}% प्रति वर्ष है। "
+                    f"{moratorium_months} माह की मोराटोरियम अवधि के बाद नियमित किस्तें देय होंगी।"
+                )
+
+        elif language == "ta":
+            return (
+                f"வணக்கம்! {location_str} பகுதியில் உள்ள உங்கள் {arch_name} திட்டத்திற்கு NSFDC {scheme_name} மூலம் "
+                f"ரூ. {loan_formatted} வரை {interest_rate}% சலுகை வட்டியில் கடன் பெறலாம். "
+                f"விண்ணப்பிக்க மாவட்ட SCA அலுவலகம் அல்லது கிராம வங்கியை தொடர்பு கொள்ளவும்."
+            )
+
+        elif language == "mr":
+            return (
+                f"नमस्कार! {location_str} येथील आपल्या {arch_name} व्यवसायासाठी NSFDC {scheme_name} अंतर्गत "
+                f"रु. {loan_formatted} चे सवलतीचे कर्ज {interest_rate}% व्याजदराने उपलब्ध आहे. "
+                f"अर्जासाठी जिल्हा राज्य चॅनेलाइजिंग एजन्सी (SCA) किंवा ग्रामीण बँकेशी संपर्क साधा."
+            )
+
+        elif language == "bn":
+            return (
+                f"নমস্কার! {location_str} অঞ্চলে আপনার {arch_name} প্রকল্পের জন্য NSFDC {scheme_name} অধীনে "
+                f"সর্বোচ্চ ₹{loan_formatted} টাকা {interest_rate}% সুদের হারে ঋণ অনুমোদিত হতে পারে। "
+                f"আবেদনের জন্য জেলা SCA কার্যালয়ে যোগাযোগ করুন।"
+            )
+
+        elif language == "kn":
+            return (
+                f"ನಮಸ್ಕಾರ! {location_str} ವ್ಯಾಪ್ತಿಯಲ್ಲಿ ನಿಮ್ಮ {arch_name} ಯೋಜನೆಗಾಗಿ NSFDC {scheme_name} ಅಡಿಯಲ್ಲಿ "
+                f"ರೂ. {loan_formatted} ಸಾಲವು {interest_rate}% ರಿಯಾಯಿತಿ ಬಡ್ಡಿದರದಲ್ಲಿ ಲಭ್ಯವಿದೆ. "
+                f"ಅರ್ಜಿ ಸಲ್ಲಿಸಲು ಜಿಲ್ಲಾ SCA ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ."
+            )
+
+        else:  # en (English default)
+            if is_docs_query:
+                return (
+                    f"Hello! For setting up a {arch_name} in {location_str} under NSFDC schemes, the required documents are:\n"
+                    f"1. SC Caste Certificate issued by competent revenue authority (Tahsildar)\n"
+                    f"2. Income Certificate confirming annual family income is within ₹5,00,000 / year\n"
+                    f"3. KYC Documents: Aadhaar card, residence proof, and bank passbook\n"
+                    f"4. Equipment / Machinery quotation and this Detailed Project Report (DPR)."
+                )
+            elif is_sca_query:
+                return (
+                    f"Hello! To apply for {scheme_name} for your {arch_name} in {location_str}, "
+                    f"please visit your District State Channelising Agency (SCA) office or nearest Regional Rural Bank (RRB). "
+                    f"Submit your DPR along with standard KYC to initiate credit appraisal."
+                )
+            elif is_business_query:
+                return (
+                    f"Establishing a {arch_name} ({category}) in {location_str} is highly viable. "
+                    f"With a benchmark project cost of ₹{cost_formatted}, NSFDC {scheme_name} can fund up to ₹{loan_formatted} (90%) "
+                    f"at a concessional interest rate of {interest_rate}% p.a. with a {moratorium_months}-month moratorium."
+                )
+            else:
+                return (
+                    f"Hello! For your {arch_name} project in {location_str}, the {scheme_name} is recommended. "
+                    f"Your eligible loan limit is ₹{loan_formatted} at a concessional interest rate of {interest_rate}% p.a. "
+                    f"Regular installment servicing begins after a {moratorium_months}-month moratorium period."
+                )
+
+gemini_advisory_service = GeminiAdvisoryService()��ত তথ্যের জন্য জেলা SCA অফিসে যোগাযোগ করুন।",
             "kn": f"ನಮಸ್ಕಾರ! ನಿಮ್ಮ ಯೋಜನೆಗಾಗಿ NSFDC ಯೋಜನೆಯಡಿ ರೂ. {feasibility_context.get('financial_plan', {}).get('approved_loan', 0):,.0f} ಸಾಲ ಲಭ್ಯವಿದೆ. ಜಿಲ್ಲಾ SCA ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.",
             "en": f"Welcome! Based on your parameters, the {feasibility_context.get('financial_plan', {}).get('selected_scheme_name', 'NSFDC Scheme')} is suitable. Your approved loan amount is Rs {feasibility_context.get('financial_plan', {}).get('approved_loan', 0):,.2f} at {feasibility_context.get('financial_plan', {}).get('interest_rate_pa', 6.5)}% interest. Please submit this DPR to your State Channelising Agency (SCA) or local bank."
         }
