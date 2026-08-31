@@ -214,6 +214,21 @@ useEffect(() => {
 
       const loadedDistricts = res.districts || [];
       setDistricts(loadedDistricts);
+      const archetypesRes = await fetchArchetypes(selectedState);
+      if (districtGenRef.current !== gen) return; // stale response — discard
+      const loadedArchetypes = archetypesRes.archetypes || [];
+
+      setArchetypes(loadedArchetypes);
+
+      if (
+       loadedArchetypes.length > 0 &&
+       !loadedArchetypes.some(
+         (a: BusinessArchetype) =>
+           a.archetype_id === selectedArchetypeId
+        )
+      ) {
+        setSelectedArchetypeId(loadedArchetypes[0].archetype_id);
+      } 
 
       if (loadedDistricts.length > 0) {
         setSelectedDistrict(loadedDistricts[0].district_code);

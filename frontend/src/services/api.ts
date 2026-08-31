@@ -32,9 +32,28 @@ export async function fetchVillages(stateCode: number, districtCode: number, blo
   return res.json();
 }
 
-export async function fetchArchetypes(): Promise<{ archetypes: BusinessArchetype[] }> {
-  const res = await fetch(`${API_BASE_URL}/business/archetypes`);
-  if (!res.ok) throw new Error('Failed to fetch business archetypes');
+export async function fetchArchetypes(
+  stateCode?: number,
+  districtCode?: number,
+  blockCode?: number,
+  villageCode?: number
+): Promise<{ archetypes: BusinessArchetype[] }> {
+  const params = new URLSearchParams();
+
+  if (stateCode) params.set('state_code', String(stateCode));
+  if (districtCode) params.set('district_code', String(districtCode));
+  if (blockCode) params.set('block_code', String(blockCode));
+  if (villageCode) params.set('village_code', String(villageCode));
+
+  const query = params.toString();
+  const url = `${API_BASE_URL}/business/archetypes${query ? `?${query}` : ''}`;
+
+  const res = await fetch(url);
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch business archetypes');
+  }
+
   return res.json();
 }
 

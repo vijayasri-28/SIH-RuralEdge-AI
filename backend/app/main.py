@@ -237,20 +237,25 @@ def export_dpr_pdf_get(
 
 @app.post("/api/v1/reports/export-dpr-pdf")
 def export_dpr_pdf_post(
-    payload: Dict[str, Any] = Body(..., description="Full FeasibilityEvaluationResponse JSON")
+    report_id: Optional[str] = Query(None, description="Optional report ID to lookup from session cache"),
+    payload: Optional[Dict[str, Any]] = Body(None, description="Full FeasibilityEvaluationResponse JSON")
 ):
     """
-    POST endpoint: Accepts the full report JSON body and generates a DPR PDF.
-    Used as a fallback when the report_id is not in the server session cache.
+    POST endpoint: Accepts either report_id query param or the full report JSON body to generate a DPR PDF.
     """
-    if not payload or not isinstance(payload, dict):
+    if report_id and report_id in SAVED_REPORTS:
+        report_data = SAVED_REPORTS[report_id]
+        target_id = report_id
+    elif payload and isinstance(payload, dict):
+        report_data = payload
+        target_id = payload.get("report_id", "REPORT")
+    else:
         raise HTTPException(
             status_code=400,
-            detail="A valid report JSON body must be provided."
+            detail="A valid report JSON body or registered report_id query parameter must be provided."
         )
 
-    target_id = payload.get("report_id", "REPORT")
-    pdf_buffer = pdf_generator.generate_dpr_pdf(payload)
+    pdf_buffer = pdf_generator.generate_dpr_pdf(report_data)
 
     return Response(
         content=pdf_buffer.getvalue(),
