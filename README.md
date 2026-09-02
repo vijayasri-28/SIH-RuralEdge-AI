@@ -1,4 +1,4 @@
-<div align="center">🌾 SIH-RuralEdge-AI
+<div align="center"> SIH-RuralEdge-AI
 
 AI-Powered Rural Development & Financial Assistance Platform
 
@@ -92,11 +92,10 @@ RuralEdge-AI aims to:
 
 📸 Platform Preview
 
-«Add your actual project screenshots here.»
-
 <p align="center">
   <img src="docs/screenshots/dashboard.png" width="800">
-</p>---
+</p>
+---
 
 🚀 Future Scope
 
